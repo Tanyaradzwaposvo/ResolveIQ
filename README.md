@@ -1,25 +1,91 @@
-Autonomous Multi-Agent IT Helpdesk System
-ResolveIQ is an autonomous IT helpdesk system powered by a 4-agent Claude AI pipeline. It triages incoming requests via Gmail, researches historical solutions, and sends automated, intelligent responses.
+# ResolveIQ — Autonomous Multi-Agent IT Resolution System
 
-The 4-Agent Pipeline
-Every ticket runs through four specialized agents in sequence:
+## What It Does
+ResolveIQ goes beyond traditional helpdesk routing. Instead of just assigning tickets to a human, it runs a 4-agent pipeline that **classifies, researches, resolves, and communicates** — automatically.
 
-Triage Agent: Classifies issues (Security, Network, etc.) and sets priority levels.
+## The 4-Agent Pipeline
 
-Memory Agent: Searches a knowledge base of 150 historical tickets for resolution patterns.
+```
+Ticket Input
+     │
+     ▼
+┌─────────────────┐
+│  Triage Agent   │  → Classifies ticket, sets priority/impact/urgency,
+│  (Claude AI)    │    identifies missing info, routes to correct team
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Memory Agent   │  → Searches historical tickets for similar cases,
+│  (Claude AI)    │    extracts resolution patterns, estimates time
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Resolution Agent   │  → Generates step-by-step resolution plan with
+│  (Claude AI)        │    exact commands, flags human-required steps
+└────────┬────────────┘
+         │
+         ▼
+┌──────────────────────────┐
+│  Communication Agent     │  → Drafts professional user-facing email
+│  (Claude AI)             │    with correct tone, clear next steps
+└──────────────────────────┘
+         │
+         ▼
+   Human Review Gate
+   (approve / escalate)
+```
 
-Resolution Agent: Generates actionable step-by-step plans and flags if human intervention is needed.
+## Setup
 
-Communication Agent: Drafts professional, empathetic replies and sends them via the Gmail API.
+### 1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-Smart Escalation
-The system identifies 6 escalation triggers, including critical priority, security threats, or the need for administrator permissions. Escalated tickets receive a unique ticket number and notify the human IT team.
+### 2. Set your Anthropic API key
+```bash
+# Windows
+set ANTHROPIC_API_KEY=sk-ant-...
 
-Technical Stack
-AI/LLM: Anthropic Claude API (claude-haiku-4-5).
+# Mac/Linux
+export ANTHROPIC_API_KEY=sk-ant-...
+```
 
-Backend: Python 3.x and Flask 3.0.
+### 3. Copy your dataset to the ResolveIQ folder
+```
+Copy it_helpdesk_agent_demo_dataset.xlsx into this folder
+```
 
-Email: Gmail API with OAuth2.
+### 4. Run the server
+```bash
+python app.py
+```
 
-Frontend: Vanilla HTML, CSS, and JavaScript dashboard.
+### 5. Open the app
+Go to: http://localhost:5000
+
+---
+
+## Business Case
+
+| Traditional Helpdesk | ResolveIQ |
+|---|---|
+| Ticket routed to human | 4 agents run in parallel |
+| Human reads & researches | Memory agent finds similar cases |
+| Human drafts response | Communication agent auto-drafts |
+| Resolution in 24-72 hours | Resolution plan in < 10 seconds |
+| Scales with headcount | Scales with compute |
+
+**Target Market:** SMBs spending $50K+/year on IT helpdesk staff
+**Model:** SaaS at $200-500/month, or per-ticket pricing
+
+---
+
+## API Endpoints
+
+- `POST /api/triage` — Process a ticket through all 4 agents
+- `GET /api/tickets` — List all tickets in current session
+- `GET /api/stats` — Summary statistics
+- `GET /api/health` — Health check

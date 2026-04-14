@@ -1,7 +1,5 @@
-# ResolveIQ — Autonomous Multi-Agent IT Resolution System
-
-## What It Does
-ResolveIQ goes beyond traditional helpdesk routing. Instead of just assigning tickets to a human, it runs a 4-agent pipeline that **classifies, researches, resolves, and communicates** — automatically.
+ResolveIQ — Autonomous Multi-Agent IT Resolution System
+ResolveIQ goes beyond traditional helpdesk routing. Instead of just assigning tickets to a human, it runs a 4-agent pipeline that classifies, researches, resolves, and communicates — automatically.
 
 ## The 4-Agent Pipeline
 

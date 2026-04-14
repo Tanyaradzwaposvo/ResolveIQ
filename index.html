@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResolveIQ — Autonomous IT Resolution</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #222535;
+  --border: #2d3148;
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #38bdf8;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --radius: 12px;
+  --agent1: #6366f1;
+  --agent2: #8b5cf6;
+  --agent3: #06b6d4;
+  --agent4: #10b981;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
+
+/* ── NAV ── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 60px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+.nav-brand .logo {
+  width: 36px; height: 36px; background: var(--primary); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.nav-badge {
+  background: rgba(99,102,241,0.15); color: var(--primary-light);
+  border: 1px solid rgba(99,102,241,0.3); padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+}
+.nav-stats { display: flex; gap: 24px; font-size: 13px; color: var(--text-muted); }
+.nav-stat span { color: var(--text); font-weight: 700; }
+
+/* ── LAYOUT ── */
+.main { display: grid; grid-template-columns: 400px 1fr; min-height: calc(100vh - 60px); }
+.sidebar { padding: 24px; border-right: 1px solid var(--border); overflow-y: auto; }
+.content { padding: 24px; overflow-y: auto; }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+}
+.card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+
+/* ── FORM ── */
+label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+textarea, input, select {
+  width: 100%; padding: 10px 14px; background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 14px; font-family: inherit;
+  transition: border-color 0.2s;
+}
+textarea:focus, input:focus, select:focus { outline: none; border-color: var(--primary); }
+textarea { resize: vertical; min-height: 130px; }
+select option { background: var(--surface); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.form-group { margin-top: 12px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 24px; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.btn-primary { background: var(--primary); color: white; width: 100%; justify-content: center; margin-top: 16px; }
+.btn-primary:hover:not(:disabled) { background: #4f46e5; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost { background: var(--surface2); color: var(--text-muted); padding: 7px 14px; font-size: 12px; border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--border); color: var(--text); }
+.samples { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ── PIPELINE VISUALIZATION ── */
+.pipeline {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;
+}
+.agent-node {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+  width: 90px;
+}
+.agent-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; position: relative;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+.agent-icon.idle { background: var(--surface2); border-color: var(--border); }
+.agent-icon.running { border-color: currentColor; animation: pulse 1.2s ease-in-out infinite; }
+.agent-icon.done { border-color: var(--success); }
+.agent-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; text-align: center; color: var(--text-muted); }
+.agent-time { font-size: 10px; color: var(--success); margin-top: 2px; min-height: 14px; }
+.arrow { color: var(--border); font-size: 18px; flex-shrink: 0; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+  50% { opacity: 0.8; box-shadow: 0 0 0 6px transparent; }
+}
+
+.a1 { color: var(--agent1); } .a1 .agent-icon.running { color: var(--agent1); }
+.a2 { color: var(--agent2); } .a2 .agent-icon.running { color: var(--agent2); }
+.a3 { color: var(--agent3); } .a3 .agent-icon.running { color: var(--agent3); }
+.a4 { color: var(--agent4); } .a4 .agent-icon.running { color: var(--agent4); }
+
+/* ── RESULT SECTIONS ── */
+.result-tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.rtab {
+  padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+  color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.rtab.active { color: var(--primary-light); border-bottom-color: var(--primary); }
+.rtab:hover { color: var(--text); }
+.rtab-content { display: none; }
+.rtab-content.active { display: block; }
+
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(45,49,72,0.5); font-size: 14px; }
+.result-row:last-child { border-bottom: none; }
+.rlabel { color: var(--text-muted); font-size: 13px; }
+.rvalue { font-weight: 600; text-align: right; }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; }
+.b-critical { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.b-high { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+.b-medium { background: rgba(99,102,241,0.15); color: var(--primary-light); border: 1px solid rgba(99,102,241,0.3); }
+.b-low { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+.b-yes { background: rgba(239,68,68,0.15); color: #f87171; }
+.b-no { background: rgba(34,197,94,0.15); color: #4ade80; }
+
+/* ── STEPS ── */
+.step-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+}
+.step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.step-num { width: 24px; height: 24px; background: var(--primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.step-title { font-weight: 700; font-size: 14px; }
+.step-details { font-size: 13px; color: var(--text-muted); background: var(--bg); padding: 10px 12px; border-radius: 6px; font-family: 'Courier New', monospace; margin-bottom: 8px; white-space: pre-wrap; word-break: break-word; }
+.step-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+.step-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+.tag-human { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.tag-auto { background: rgba(34,197,94,0.15); color: #4ade80; }
+.tag-admin { background: rgba(239,68,68,0.15); color: #f87171; }
+.tag-time { background: var(--border); color: var(--text-muted); }
+
+/* ── EMAIL DRAFT ── */
+.email-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.email-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+.email-field { font-size: 13px; color: var(--text-muted); }
+.email-field span { color: var(--text); }
+.email-body { padding: 16px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+.email-actions { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+
+/* ── HISTORY ── */
+.history-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.history-item:hover { border-color: var(--primary); }
+.history-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.history-id { font-size: 12px; font-weight: 800; color: var(--primary-light); }
+.history-summary { font-size: 13px; color: var(--text-muted); }
+
+/* ── CONFIDENCE BAR ── */
+.conf-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; }
+.conf-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+
+/* ── EMPTY / LOADING ── */
+.empty-state { text-align: center; padding: 80px 20px; color: var(--text-muted); }
+.empty-state .big { font-size: 56px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tip {
+  background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--primary-light);
+  margin-bottom: 12px;
+}
+
+.memory-found { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+.prevention { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #4ade80; margin-top: 12px; }
+
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 24px; right: 24px; background: var(--success); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity 0.3s; z-index: 999; pointer-events: none; }
+#toast.show { opacity: 1; }
+
+/* ── EMAIL FEED ── */
+.feed-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; margin-bottom: 12px; overflow: hidden;
+  transition: border-color 0.2s;
+}
+.feed-card:hover { border-color: var(--primary); }
+.feed-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; cursor: pointer;
+}
+.feed-header-left { display: flex; align-items: center; gap: 12px; }
+.feed-avatar {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), var(--agent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.feed-subject { font-weight: 700; font-size: 14px; }
+.feed-sender { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.feed-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.feed-time { font-size: 11px; color: var(--text-muted); }
+.feed-body { padding: 0 16px 16px; display: none; }
+.feed-body.open { display: block; }
+.feed-section { margin-bottom: 14px; }
+.feed-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.feed-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+.feed-key { color: var(--text-muted); }
+.feed-val { font-weight: 600; }
+.feed-step {
+  background: var(--bg); border-radius: 6px; padding: 8px 12px;
+  margin-bottom: 6px; font-size: 13px;
+}
+.feed-step-num { color: var(--primary-light); font-weight: 800; margin-right: 8px; }
+.feed-reply {
+  background: var(--bg); border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.feed-reply-header {
+  background: rgba(34,197,94,0.1); padding: 8px 14px;
+  font-size: 12px; font-weight: 700; color: var(--success);
+  border-bottom: 1px solid var(--border);
+}
+.feed-reply-body {
+  padding: 12px 14px; font-size: 13px;
+  white-space: pre-wrap; line-height: 1.6; color: var(--text);
+}
+.sent-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(34,197,94,0.15); color: var(--success);
+  border: 1px solid rgba(34,197,94,0.3); padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 700;
+}
+.unsent-badge {
+  background: rgba(239,68,68,0.15); color: var(--danger);
+  border: 1px solid rgba(239,68,68,0.3); padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 700;
+}
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+/* ── PIPELINE TRAIL ── */
+.pipeline-trail {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+}
+.pt-node {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 7px; color: var(--text-muted);
+}
+.pt-node.done { border-color: rgba(34,197,94,0.4); color: #4ade80; background: rgba(34,197,94,0.08); }
+.pt-arrow { color: var(--border); font-size: 10px; }
+
+/* ── FEED SUMMARY STRIP ── */
+.feed-summary-strip {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden; margin-bottom: 16px;
+}
+.feed-summary-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; font-size: 12px; cursor: pointer;
+  border-bottom: 1px solid rgba(45,49,72,0.5); transition: background 0.15s;
+}
+.feed-summary-row:last-child { border-bottom: none; }
+.feed-summary-row:hover { background: rgba(99,102,241,0.06); }
+.feed-summary-row.escalated-row:hover { background: rgba(239,68,68,0.06); }
+.fsr-id { font-weight: 800; color: var(--primary-light); min-width: 130px; font-size: 11px; }
+.fsr-id.esc { color: #f87171; }
+.fsr-subject { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fsr-sender { color: var(--text-muted); min-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fsr-time { color: var(--text-muted); min-width: 55px; text-align: right; }
+
+/* ── ESCALATED STYLES ── */
+.feed-card.escalated { border-color: rgba(239,68,68,0.4); }
+.feed-card.escalated:hover { border-color: var(--danger); }
+.escalated-banner {
+  background: rgba(239,68,68,0.12); border-bottom: 1px solid rgba(239,68,68,0.25);
+  padding: 8px 16px; display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; color: #f87171; letter-spacing: 0.5px;
+}
+.escalated-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(239,68,68,0.15); color: #f87171;
+  border: 1px solid rgba(239,68,68,0.35); padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+}
+.auto-resolved-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(34,197,94,0.15); color: #4ade80;
+  border: 1px solid rgba(34,197,94,0.3); padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+}
+.escalated-reply-header {
+  background: rgba(239,68,68,0.1); padding: 8px 14px;
+  font-size: 12px; font-weight: 700; color: #f87171;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── GMAIL PANEL ── */
+.gmail-panel { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+.gmail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; background: var(--surface2); cursor: pointer;
+  border-bottom: 1px solid transparent; transition: border-color 0.2s;
+}
+.gmail-header:hover { border-bottom-color: var(--border); }
+.gmail-header-left { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14px; }
+.gmail-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.gmail-dot.connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.gmail-dot.error { background: var(--danger); }
+.gmail-body { padding: 16px 18px; background: var(--surface); display: none; }
+.gmail-body.open { display: block; }
+.gmail-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; border-bottom: 1px solid rgba(45,49,72,0.4); }
+.gmail-row:last-child { border-bottom: none; }
+.gmail-key { color: var(--text-muted); }
+.gmail-val { font-weight: 600; }
+.gmail-controls { display: flex; gap: 8px; margin-top: 14px; }
+.btn-gmail-start { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+.btn-gmail-start:hover { background: rgba(34,197,94,0.25); }
+.btn-gmail-stop  { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.btn-gmail-stop:hover  { background: rgba(239,68,68,0.25); }
+.btn-gmail-now   { background: rgba(99,102,241,0.15); color: var(--primary-light); border: 1px solid rgba(99,102,241,0.3); }
+.btn-gmail-now:hover   { background: rgba(99,102,241,0.25); }
+
+.gmail-log-entry {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px; margin-bottom: 6px; font-size: 12px;
+}
+.gmail-log-entry .log-id   { color: var(--primary-light); font-weight: 700; }
+.gmail-log-entry .log-meta { color: var(--text-muted); margin-top: 2px; }
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--success); margin-right: 6px;
+  animation: pulse-anim 1.5s ease-in-out infinite;
+}
+@keyframes pulse-anim {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="logo">⚡</div>
+    ResolveIQ
+    <span class="nav-badge">MULTI-AGENT</span>
+  </div>
+  <div class="nav-stats">
+    <div>Triaged: <span id="stat-total">0</span></div>
+    <div>KB Tickets: <span id="stat-kb">—</span></div>
+    <div>Avg Time: <span id="stat-time">—</span></div>
+    <div>Auto-Resolvable: <span id="stat-auto">—</span></div>
+    <div style="color:#f87171;">Escalated: <span id="stat-escalated" style="color:#f87171;font-weight:700;">0</span></div>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">📨 New Support Ticket</div>
+
+      <label>Ticket Description *</label>
+      <textarea id="ticketText" placeholder="Describe the issue...&#10;&#10;Example: My laptop won't connect to VPN since this morning. I have a client call in 2 hours and I'm completely blocked."></textarea>
+
+      <div class="form-row">
+        <div>
+          <label>Submitter</label>
+          <input type="text" id="submitter" placeholder="e.g. Jane Smith">
+        </div>
+        <div>
+          <label>Department</label>
+          <select id="department">
+            <option value="">—</option>
+            <option>Engineering</option><option>Sales</option><option>Marketing</option>
+            <option>Finance</option><option>HR</option><option>Legal</option>
+            <option>Operations</option><option>Executive</option><option>IT</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="triageBtn" onclick="runTriage()">
+        ⚡ Run 4-Agent Pipeline
+      </button>
+
+      <div class="samples" style="margin-top:12px;">
+        <span style="font-size:11px;color:var(--text-muted);align-self:center;">Samples:</span>
+        <button class="btn btn-ghost" onclick="loadSample(0)">VPN</button>
+        <button class="btn btn-ghost" onclick="loadSample(1)">Phishing</button>
+        <button class="btn btn-ghost" onclick="loadSample(2)">Lockout</button>
+        <button class="btn btn-ghost" onclick="loadSample(3)">CRM Bug</button>
+        <button class="btn btn-ghost" onclick="loadSample(4)">BSOD</button>
+      </div>
+    </div>
+
+    <!-- Gmail Integration Panel -->
+    <div class="gmail-panel" id="gmailPanel">
+      <div class="gmail-header" onclick="toggleGmailPanel()">
+        <div class="gmail-header-left">
+          <div class="gmail-dot" id="gmailDot"></div>
+          <span>📧 Gmail Integration</span>
+          <span id="gmailWatcherBadge" style="display:none;" class="nav-badge"><span class="pulse-dot"></span>WATCHING</span>
+        </div>
+        <span style="color:var(--text-muted);font-size:12px;" id="gmailToggleArrow">▼</span>
+      </div>
+      <div class="gmail-body" id="gmailBody">
+        <div id="gmailStatusRows">
+          <div class="gmail-row"><span class="gmail-key">Status</span><span class="gmail-val" id="gm-status">Checking...</span></div>
+          <div class="gmail-row"><span class="gmail-key">Account</span><span class="gmail-val" id="gm-email">—</span></div>
+          <div class="gmail-row"><span class="gmail-key">Watching label</span><span class="gmail-val" id="gm-label">—</span></div>
+          <div class="gmail-row"><span class="gmail-key">Watcher</span><span class="gmail-val" id="gm-watcher">—</span></div>
+          <div class="gmail-row"><span class="gmail-key">Processed</span><span class="gmail-val" id="gm-processed">—</span></div>
+          <div class="gmail-row"><span class="gmail-key">Escalated</span><span class="gmail-val" id="gm-escalated" style="color:#f87171;">—</span></div>
+          <div class="gmail-row"><span class="gmail-key">Last check</span><span class="gmail-val" id="gm-last-check">—</span></div>
+        </div>
+        <div class="gmail-controls">
+          <button class="btn btn-ghost btn-gmail-start" onclick="gmailStart()">▶ Start Watcher</button>
+          <button class="btn btn-ghost btn-gmail-stop" onclick="gmailStop()">■ Stop</button>
+          <button class="btn btn-ghost btn-gmail-now" onclick="gmailProcessNow()">⚡ Process Now</button>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="card-title" style="margin-bottom:8px;">Recent Email Tickets</div>
+          <div id="gmailLog">
+            <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px;">No emails processed yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <div class="card-title">📋 Session History</div>
+      <div id="historyList">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">No tickets yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="content">
+
+    <!-- Agent Pipeline Visualization -->
+    <div class="card">
+      <div class="card-title">🤖 Agent Pipeline</div>
+      <div class="pipeline">
+        <div class="agent-node a1">
+          <div class="agent-icon idle" id="a1-icon">🔍</div>
+          <div class="agent-label">Triage</div>
+          <div class="agent-time" id="a1-time"></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="agent-node a2">
+          <div class="agent-icon idle" id="a2-icon">🧠</div>
+          <div class="agent-label">Memory</div>
+          <div class="agent-time" id="a2-time"></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="agent-node a3">
+          <div class="agent-icon idle" id="a3-icon">🛠️</div>
+          <div class="agent-label">Resolution</div>
+          <div class="agent-time" id="a3-time"></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="agent-node a4">
+          <div class="agent-icon idle" id="a4-icon">✉️</div>
+          <div class="agent-label">Communication</div>
+          <div class="agent-time" id="a4-time"></div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="agent-node" style="color:var(--success);">
+          <div class="agent-icon idle" id="out-icon" style="background:rgba(34,197,94,0.1);">✅</div>
+          <div class="agent-label" style="color:var(--success);">Output</div>
+          <div class="agent-time" id="out-time"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <!-- Live Email Feed -->
+    <div class="card" id="emailFeedCard">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;">📧 Live Gmail Ticket Feed &nbsp;<span style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:none;letter-spacing:0;">4-agent pipeline · Triage → Memory → Resolution → Communication</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="feedCount" style="font-size:12px;color:var(--text-muted);">0 emails processed</span>
+          <button class="btn btn-ghost" id="feedViewBtn" onclick="toggleFeedView()" style="padding:5px 10px;font-size:11px;">☰ List</button>
+          <button class="btn btn-ghost" onclick="refreshFeed()" style="padding:5px 10px;font-size:11px;">🔄 Refresh</button>
+        </div>
+      </div>
+      <!-- Compact summary strip (always visible) -->
+      <div id="emailFeedStrip"></div>
+      <!-- Detailed cards (toggle) -->
+      <div id="emailFeed" style="display:none;"></div>
+    </div>
+
+    <div id="emptyState">
+      <div class="empty-state">
+        <div class="big">⚡</div>
+        <h3>Ready to resolve tickets</h3>
+        <p>Paste a support ticket and run the 4-agent pipeline.<br>ResolveIQ will classify, research, plan, and communicate — in seconds.</p>
+      </div>
+    </div>
+
+    <div id="resultArea" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-size:20px;font-weight:800;" id="res-ticket-id"></div>
+          <div style="font-size:13px;color:var(--text-muted);" id="res-submitted"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <span id="res-priority-badge"></span>
+          <button class="btn btn-ghost" onclick="copyEmail()">📋 Copy Email</button>
+        </div>
+      </div>
+
+      <div class="result-tabs">
+        <div class="rtab active" onclick="switchTab('triage', this)">🔍 Triage</div>
+        <div class="rtab" onclick="switchTab('memory', this)">🧠 Memory</div>
+        <div class="rtab" onclick="switchTab('resolution', this)">🛠️ Resolution</div>
+        <div class="rtab" onclick="switchTab('communication', this)">✉️ Draft Response</div>
+      </div>
+
+      <!-- Triage Tab -->
+      <div class="rtab-content active" id="tab-triage">
+        <div class="card">
+          <div class="card-title">🔍 Classification & Assessment</div>
+          <div class="tip" id="res-summary"></div>
+          <div class="result-row"><span class="rlabel">Category</span><span class="rvalue" id="res-category"></span></div>
+          <div class="result-row"><span class="rlabel">Subcategory</span><span class="rvalue" id="res-subcategory"></span></div>
+          <div class="result-row"><span class="rlabel">Impact</span><span class="rvalue" id="res-impact"></span></div>
+          <div class="result-row"><span class="rlabel">Urgency</span><span class="rvalue" id="res-urgency"></span></div>
+          <div class="result-row"><span class="rlabel">Priority</span><span class="rvalue" id="res-priority"></span></div>
+          <div class="result-row"><span class="rlabel">Missing Info?</span><span class="rvalue" id="res-missing"></span></div>
+          <div class="result-row" id="res-followup-row"><span class="rlabel">Follow-up Question</span><span class="rvalue" id="res-followup" style="color:var(--warning);text-align:right;max-width:65%;"></span></div>
+          <div class="result-row"><span class="rlabel">Assigned Team</span><span class="rvalue" id="res-team" style="color:var(--primary-light);"></span></div>
+          <div class="result-row"><span class="rlabel">Confidence</span><span class="rvalue" id="res-confidence"></span></div>
+          <div class="conf-bar"><div class="conf-fill" id="res-conf-bar" style="background:var(--success);"></div></div>
+        </div>
+      </div>
+
+      <!-- Memory Tab -->
+      <div class="rtab-content" id="tab-memory">
+        <div class="card">
+          <div class="card-title">🧠 Historical Knowledge Retrieval</div>
+          <div class="memory-found" id="res-memory-found"></div>
+          <div class="result-row"><span class="rlabel">Similar Cases Found</span><span class="rvalue" id="res-mem-found"></span></div>
+          <div class="result-row"><span class="rlabel">Estimated Resolution</span><span class="rvalue" id="res-mem-time"></span></div>
+          <div class="result-row"><span class="rlabel">Auto-Resolvable</span><span class="rvalue" id="res-mem-auto"></span></div>
+          <div class="result-row"><span class="rlabel">Escalation Likely</span><span class="rvalue" id="res-mem-esc"></span></div>
+          <div style="margin-top:14px;" id="mem-steps-area"></div>
+        </div>
+      </div>
+
+      <!-- Resolution Tab -->
+      <div class="rtab-content" id="tab-resolution">
+        <div class="card">
+          <div class="card-title">🛠️ Step-by-Step Resolution Plan</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div style="font-size:13px;color:var(--text-muted);">Total Estimated Time: <strong style="color:var(--text);" id="res-total-time"></strong></div>
+            <div id="res-automation-badge"></div>
+          </div>
+          <div id="res-steps"></div>
+          <div class="prevention" id="res-prevention" style="display:none;">
+            💡 <strong>Prevention Tip:</strong> <span id="res-prevention-text"></span>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--text-muted);" id="res-automation-notes"></div>
+        </div>
+      </div>
+
+      <!-- Communication Tab -->
+      <div class="rtab-content" id="tab-communication">
+        <div class="card">
+          <div class="card-title">✉️ Auto-Generated User Response</div>
+          <div class="email-card">
+            <div class="email-header">
+              <div class="email-field">Subject: <span id="email-subject"></span></div>
+              <div class="email-field">To: <span id="email-to"></span></div>
+              <div style="display:flex;gap:8px;margin-top:6px;" id="email-meta"></div>
+            </div>
+            <div class="email-body" id="email-body"></div>
+            <div class="email-actions">
+              <button class="btn btn-ghost" onclick="copyEmail()">📋 Copy</button>
+              <button class="btn btn-ghost" style="background:rgba(99,102,241,0.15);color:var(--primary-light);border-color:rgba(99,102,241,0.3);">Send via Outlook</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast">✅ Copied to clipboard!</div>
+
+<script>
+// ─── Samples ───────────────────────────────────────────────────────────────
+const SAMPLES = [
+  { text: "I can't connect to the VPN from home. It was working yesterday but today it just spins and times out. I've tried restarting my laptop and my router. I have a client demo at 3 PM and need access to internal systems. I'm completely blocked.", submitter: "James Park", dept: "Sales" },
+  { text: "I received an email that looks like it's from our CEO asking me to urgently purchase $500 worth of gift cards and send the codes to a new vendor. The email address is slightly different from his real one — 'ceo@company-corp.net' instead of 'ceo@company.com'. I haven't responded yet.", submitter: "Sarah Chen", dept: "Finance" },
+  { text: "My account has been locked out again. This is the 3rd time this week. I think my Authenticator app is out of sync after I replaced my phone. I can't access Outlook, Teams, or anything. I have a board call in 45 minutes.", submitter: "Michael Torres", dept: "Executive" },
+  { text: "The Salesforce dashboard is showing wrong Q2 pipeline numbers. The total is $4.2M but our spreadsheet says $6.8M. Several reps have noticed. We have a board presentation Friday morning and need accurate numbers.", submitter: "Amanda Lee", dept: "Sales" },
+  { text: "My laptop crashed with a blue screen (BSOD) and now won't boot. The error says IRQL_NOT_LESS_OR_EQUAL. It happened right after Windows updates installed last night. I have all my work files on this machine. Model is Dell Latitude 5530, asset tag DL-08821.", submitter: "Kevin Wu", dept: "Engineering" },
+];
+
+function loadSample(i) {
+  const s = SAMPLES[i];
+  document.getElementById('ticketText').value = s.text;
+  document.getElementById('submitter').value = s.submitter;
+  const sel = document.getElementById('department');
+  for (let opt of sel.options) { if (opt.value === s.dept) { sel.value = s.dept; break; } }
+}
+
+// ─── Pipeline State ─────────────────────────────────────────────────────────
+const AGENT_MAP = [
+  { id: 'a1', name: 'Triage Agent' },
+  { id: 'a2', name: 'Memory Agent' },
+  { id: 'a3', name: 'Resolution Agent' },
+  { id: 'a4', name: 'Communication Agent' },
+];
+
+function resetPipeline() {
+  AGENT_MAP.forEach(a => {
+    const icon = document.getElementById(a.id + '-icon');
+    icon.className = 'agent-icon idle';
+    document.getElementById(a.id + '-time').textContent = '';
+  });
+  document.getElementById('out-icon').className = 'agent-icon idle';
+  document.getElementById('out-time').textContent = '';
+}
+
+function setAgentRunning(id) {
+  document.getElementById(id + '-icon').className = 'agent-icon running';
+}
+
+function setAgentDone(id, ms) {
+  document.getElementById(id + '-icon').className = 'agent-icon done';
+  document.getElementById(id + '-time').textContent = ms + 'ms';
+}
+
+// ─── Main Triage Call ───────────────────────────────────────────────────────
+let sessionTickets = [];
+let currentResult = null;
+
+async function runTriage() {
+  const text = document.getElementById('ticketText').value.trim();
+  if (!text) { alert('Please enter a ticket description.'); return; }
+
+  const btn = document.getElementById('triageBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Agents running...';
+
+  resetPipeline();
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultArea').style.display = 'none';
+
+  // Animate agents in sequence (approximate timing for UX)
+  setAgentRunning('a1');
+  const animTimer1 = setTimeout(() => { setAgentDone('a1', '—'); setAgentRunning('a2'); }, 800);
+  const animTimer2 = setTimeout(() => { setAgentDone('a2', '—'); setAgentRunning('a3'); }, 1600);
+  const animTimer3 = setTimeout(() => { setAgentDone('a3', '—'); setAgentRunning('a4'); }, 2400);
+
+  try {
+    const payload = {
+      ticket_text: text,
+      submitter: document.getElementById('submitter').value.trim(),
+      department: document.getElementById('department').value,
+    };
+
+    const res = await fetch('/api/triage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    clearTimeout(animTimer1); clearTimeout(animTimer2); clearTimeout(animTimer3);
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Server error');
+    }
+
+    const data = await res.json();
+    currentResult = data;
+
+    // Update pipeline timing from real data
+    const log = data.pipeline_log || [];
+    log.forEach((entry, i) => {
+      const id = ['a1','a2','a3','a4'][i];
+      if (id) { setAgentDone(id, entry.duration_ms); }
+    });
+    document.getElementById('out-icon').className = 'agent-icon done';
+    document.getElementById('out-time').textContent = data.total_duration_ms + 'ms total';
+
+    sessionTickets.unshift(data);
+    renderResult(data);
+    renderHistory();
+    refreshStats();
+
+    document.getElementById('resultArea').style.display = 'block';
+
+  } catch (err) {
+    clearTimeout(animTimer1); clearTimeout(animTimer2); clearTimeout(animTimer3);
+    resetPipeline();
+    document.getElementById('emptyState').style.display = 'block';
+    alert('Error: ' + err.message + '\n\nMake sure app.py is running and ANTHROPIC_API_KEY is set.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Run 4-Agent Pipeline';
+  }
+}
+
+// ─── Render Result ──────────────────────────────────────────────────────────
+function priorityBadge(p) {
+  const cls = { Critical:'b-critical', High:'b-high', Medium:'b-medium', Low:'b-low' }[p] || 'b-medium';
+  return `<span class="badge ${cls}">${p}</span>`;
+}
+
+function yesNo(val) {
+  return val ? '<span class="badge b-yes">Yes</span>' : '<span class="badge b-no">No</span>';
+}
+
+function renderResult(d) {
+  const t = d.triage; const m = d.memory; const r = d.resolution; const c = d.communication;
+
+  // Header
+  document.getElementById('res-ticket-id').textContent = d.ticket_id;
+  document.getElementById('res-submitted').textContent = new Date(d.submitted_at).toLocaleString() +
+    (d.input.submitter ? ' · ' + d.input.submitter : '') +
+    (d.input.department ? ' · ' + d.input.department : '');
+  document.getElementById('res-priority-badge').innerHTML = priorityBadge(t.priority);
+
+  // Triage tab
+  document.getElementById('res-summary').textContent = t.summary;
+  document.getElementById('res-category').textContent = t.category;
+  document.getElementById('res-subcategory').textContent = t.subcategory;
+  document.getElementById('res-impact').innerHTML = priorityBadge(t.impact);
+  document.getElementById('res-urgency').innerHTML = priorityBadge(t.urgency);
+  document.getElementById('res-priority').innerHTML = priorityBadge(t.priority);
+  document.getElementById('res-missing').innerHTML = yesNo(t.missing_info);
+  document.getElementById('res-followup').textContent = t.follow_up_question || '';
+  document.getElementById('res-followup-row').style.display = t.follow_up_question ? 'flex' : 'none';
+  document.getElementById('res-team').textContent = t.assigned_team;
+  document.getElementById('res-confidence').textContent = t.confidence + ' (' + Math.round(t.confidence_score * 100) + '%)';
+  const confPct = Math.round(t.confidence_score * 100);
+  document.getElementById('res-conf-bar').style.width = confPct + '%';
+  document.getElementById('res-conf-bar').style.background = confPct >= 70 ? 'var(--success)' : confPct >= 45 ? 'var(--warning)' : 'var(--danger)';
+
+  // Memory tab
+  document.getElementById('res-memory-found').innerHTML = m.similar_cases_found
+    ? `<strong style="color:var(--success);">✅ ${m.notes || 'Similar past cases found.'}</strong>`
+    : `<strong style="color:var(--warning);">⚠️ ${m.notes || 'No historical cases found.'}</strong>`;
+  document.getElementById('res-mem-found').innerHTML = yesNo(m.similar_cases_found);
+  document.getElementById('res-mem-time').textContent = m.estimated_resolution_time_minutes ? m.estimated_resolution_time_minutes + ' min' : '—';
+  document.getElementById('res-mem-auto').innerHTML = yesNo(m.auto_resolvable);
+  document.getElementById('res-mem-esc').innerHTML = yesNo(m.escalation_likely);
+  const memSteps = document.getElementById('mem-steps-area');
+  if (m.past_steps && m.past_steps.length) {
+    memSteps.innerHTML = '<div class="rlabel" style="margin-bottom:8px;">Resolution Pattern from History:</div>' +
+      m.past_steps.map((s,i) => `<div class="step-item"><div class="step-header"><div class="step-num">${i+1}</div><div class="step-title">${s}</div></div></div>`).join('');
+  } else { memSteps.innerHTML = ''; }
+
+  // Resolution tab
+  document.getElementById('res-total-time').textContent = (r.total_estimated_minutes || '?') + ' minutes';
+  document.getElementById('res-automation-badge').innerHTML = r.can_be_automated
+    ? '<span class="badge b-no" style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);">⚡ Auto-Resolvable</span>'
+    : '<span class="badge b-high">Requires Human</span>';
+  const stepsEl = document.getElementById('res-steps');
+  stepsEl.innerHTML = (r.resolution_steps || []).map(s => `
+    <div class="step-item">
+      <div class="step-header">
+        <div class="step-num">${s.step}</div>
+        <div class="step-title">${s.action}</div>
+      </div>
+      ${s.details ? `<div class="step-details">${s.details}</div>` : ''}
+      <div class="step-meta">
+        ${s.requires_human ? '<span class="step-tag tag-human">👤 Requires Human</span>' : '<span class="step-tag tag-auto">🤖 Automatable</span>'}
+        ${s.requires_elevated_permissions ? '<span class="step-tag tag-admin">🔑 Admin Required</span>' : ''}
+        ${s.estimated_minutes ? `<span class="step-tag tag-time">⏱ ~${s.estimated_minutes} min</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  if (r.prevention_tip) {
+    document.getElementById('res-prevention').style.display = 'block';
+    document.getElementById('res-prevention-text').textContent = r.prevention_tip;
+  } else { document.getElementById('res-prevention').style.display = 'none'; }
+  if (r.automation_notes) {
+    document.getElementById('res-automation-notes').textContent = '🤖 Automation: ' + r.automation_notes;
+  } else { document.getElementById('res-automation-notes').textContent = ''; }
+
+  // Communication tab
+  document.getElementById('email-subject').textContent = c.subject;
+  document.getElementById('email-to').textContent = d.input.submitter || '(submitter)';
+  document.getElementById('email-body').textContent = [c.greeting, '', c.body, '', c.closing].join('\n');
+  document.getElementById('email-meta').innerHTML = `<span class="badge b-medium">${c.tone}</span>` +
+    (c.requires_user_action ? '<span class="badge b-yes" style="margin-left:4px;">Action Required</span>' : '');
+
+  // Switch to triage tab
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.rtab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector('.rtab').classList.add('active');
+  document.getElementById('tab-triage').classList.add('active');
+}
+
+// ─── History ────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!sessionTickets.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">No tickets yet</div>';
+    return;
+  }
+  el.innerHTML = sessionTickets.map((t, i) => `
+    <div class="history-item" onclick="showHistoryItem(${i})">
+      <div class="history-top">
+        <span class="history-id">${t.ticket_id}</span>
+        ${priorityBadge(t.triage.priority)}
+      </div>
+      <div class="history-summary">${t.triage.summary}</div>
+    </div>
+  `).join('');
+}
+
+function showHistoryItem(i) {
+  currentResult = sessionTickets[i];
+  renderResult(currentResult);
+  document.getElementById('resultArea').style.display = 'block';
+  document.getElementById('emptyState').style.display = 'none';
+}
+
+// ─── Stats ──────────────────────────────────────────────────────────────────
+async function refreshStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    document.getElementById('stat-total').textContent = d.total;
+    document.getElementById('stat-kb').textContent = d.kb_size;
+    document.getElementById('stat-time').textContent = d.avg_duration_ms ? (d.avg_duration_ms / 1000).toFixed(1) + 's' : '—';
+    document.getElementById('stat-auto').textContent = d.total ? d.auto_resolvable_pct + '%' : '—';
+    document.getElementById('stat-escalated').textContent = d.escalated_count ?? 0;
+  } catch (_) {}
+}
+
+// ─── Tab Switching ──────────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.rtab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ─── Copy Email ─────────────────────────────────────────────────────────────
+function copyEmail() {
+  const body = document.getElementById('email-body').textContent;
+  const subject = document.getElementById('email-subject').textContent;
+  navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`).then(() => {
+    showToast('✅ Copied to clipboard!');
+  });
+}
+
+// ─── Email Feed ──────────────────────────────────────────────────────────────
+let feedExpanded = {};
+let feedDetailVisible = false;
+
+function toggleFeedView() {
+  feedDetailVisible = !feedDetailVisible;
+  document.getElementById('emailFeed').style.display = feedDetailVisible ? 'block' : 'none';
+  document.getElementById('feedViewBtn').textContent = feedDetailVisible ? '☰ Collapse' : '☰ List';
+}
+
+async function refreshFeed() {
+  try {
+    const r = await fetch('/api/gmail/feed');
+    const feed = await r.json();
+    const stripEl = document.getElementById('emailFeedStrip');
+    const el = document.getElementById('emailFeed');
+    const esc = feed.filter(t => t.escalated).length;
+    const auto = feed.length - esc;
+    document.getElementById('feedCount').textContent =
+      `${feed.length} processed` + (esc > 0 ? ` · ${esc} escalated` : '') + (auto > 0 ? ` · ${auto} auto-resolved` : '');
+
+    if (feed.length === 0) {
+      stripEl.innerHTML = `<div class="empty-state" style="padding:40px 20px;">
+        <div style="font-size:40px;margin-bottom:12px;">📭</div>
+        <p>No emails processed yet.<br>Apply the <strong>IT-Helpdesk</strong> label to a Gmail email and click <strong>⚡ Process Now</strong>.</p>
+      </div>`;
+      el.innerHTML = '';
+      return;
+    }
+
+    // ── Compact summary strip ──────────────────────────────────────────────
+    stripEl.innerHTML = `<div class="feed-summary-strip">` + feed.map(t => {
+      const isEsc = t.escalated;
+      const time = new Date(t.submitted_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const pBadge = `<span class="badge ${t.triage.priority==='Critical'?'b-critical':t.triage.priority==='High'?'b-high':t.triage.priority==='Medium'?'b-medium':'b-low'}" style="font-size:10px;padding:2px 7px;">${t.triage.priority}</span>`;
+      const statusBadge = isEsc
+        ? `<span class="escalated-badge" style="font-size:10px;padding:2px 7px;">🚨 Escalated</span>`
+        : `<span class="auto-resolved-badge" style="font-size:10px;padding:2px 7px;">✅ Auto</span>`;
+      return `
+        <div class="feed-summary-row ${isEsc ? 'escalated-row' : ''}" onclick="jumpToCard('${t.ticket_id}')">
+          <span class="fsr-id ${isEsc ? 'esc' : ''}">${t.ticket_id}</span>
+          <span class="fsr-subject">${t.email.subject || '(no subject)'}</span>
+          <span class="fsr-sender">${t.email.sender_email || t.email.sender || '—'}</span>
+          ${pBadge}
+          ${statusBadge}
+          <span class="fsr-time">${time}</span>
+        </div>`;
+    }).join('') + `</div>`;
+
+
+    el.innerHTML = feed.map((t, i) => {
+      const time = new Date(t.submitted_at).toLocaleTimeString();
+      const date = new Date(t.submitted_at).toLocaleDateString();
+      const isOpen = feedExpanded[t.ticket_id] || i === 0;
+      const steps = (t.resolution.steps || []).slice(0, 3);
+      const isEscalated = t.escalated;
+      // Use reply_body for the actual sent email content (includes ticket number)
+      const replyBodyText = t.reply_body || t.reply.body || '—';
+
+      return `
+      <div class="feed-card ${isEscalated ? 'escalated' : ''}">
+        ${isEscalated ? `<div class="escalated-banner">⚠️ ESCALATED — Awaiting Human Agent &nbsp;·&nbsp; ${t.ticket_id}</div>` : ''}
+        <div class="feed-header" onclick="toggleFeed('${t.ticket_id}')">
+          <div class="feed-header-left">
+            <div class="feed-avatar" style="${isEscalated ? 'background:linear-gradient(135deg,#ef4444,#f97316);' : ''}">${isEscalated ? '🚨' : '📧'}</div>
+            <div>
+              <div class="feed-subject">${t.email.subject || '(no subject)'}</div>
+              <div class="feed-sender">From: ${t.email.sender_email || t.email.sender || '—'} &nbsp;·&nbsp; ${date} ${time}</div>
+            </div>
+          </div>
+          <div class="feed-meta">
+            <span class="badge ${t.triage.priority === 'Critical' ? 'b-critical' : t.triage.priority === 'High' ? 'b-high' : t.triage.priority === 'Medium' ? 'b-medium' : 'b-low'}">${t.triage.priority}</span>
+            ${isEscalated
+              ? '<span class="escalated-badge">🚨 Escalated</span>'
+              : '<span class="auto-resolved-badge">✅ Auto-Resolved</span>'}
+            ${t.reply.sent ? '<span class="sent-badge">✉️ Reply Sent</span>' : '<span class="unsent-badge">⚠️ Not Sent</span>'}
+            <span style="color:var(--text-muted);font-size:16px;">${isOpen ? '▲' : '▼'}</span>
+          </div>
+        </div>
+
+        <div class="feed-body ${isOpen ? 'open' : ''}" id="feed-body-${t.ticket_id}">
+          <div class="divider"></div>
+
+          <!-- Ticket ID & Timing -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-size:12px;font-weight:800;color:${isEscalated ? '#f87171' : 'var(--primary-light)'};">${t.ticket_id}</span>
+            <span style="font-size:12px;color:var(--text-muted);">⏱ Processed in ${(t.duration_ms/1000).toFixed(1)}s</span>
+          </div>
+
+          <!-- Agent Pipeline Trail -->
+          <div class="pipeline-trail" style="margin-bottom:14px;">
+            <span class="pt-node done">🔍 Triage</span>
+            <span class="pt-arrow">→</span>
+            <span class="pt-node done">🧠 Memory</span>
+            <span class="pt-arrow">→</span>
+            <span class="pt-node done">🛠️ Resolution</span>
+            <span class="pt-arrow">→</span>
+            <span class="pt-node done">✉️ Communication</span>
+            <span class="pt-arrow">→</span>
+            <span class="pt-node done" style="${isEscalated ? 'border-color:rgba(239,68,68,0.4);color:#f87171;background:rgba(239,68,68,0.08);' : ''}">${isEscalated ? '🚨 Escalated' : '✅ Auto-Resolved'}</span>
+          </div>
+
+          <!-- Escalation Notice (if escalated) -->
+          ${isEscalated ? `
+          <div style="background:rgba(239,68,68,0.08);border-left:3px solid var(--danger);padding:12px 14px;border-radius:6px;margin-bottom:14px;">
+            <div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:4px;">🚨 Escalation Required</div>
+            <div style="font-size:13px;color:var(--text-muted);">This ticket could not be auto-resolved and has been escalated to <strong style="color:#f87171;">${t.triage.assigned_team}</strong>. A human agent will follow up.</div>
+          </div>` : ''}
+
+          <!-- Triage -->
+          <div class="feed-section">
+            <div class="feed-section-title">🔍 Triage Result</div>
+            <div style="background:rgba(99,102,241,0.08);border-left:3px solid var(--primary);padding:8px 12px;border-radius:4px;font-size:13px;margin-bottom:10px;">${t.triage.summary}</div>
+            <div class="feed-row"><span class="feed-key">Category</span><span class="feed-val">${t.triage.category} › ${t.triage.subcategory}</span></div>
+            <div class="feed-row"><span class="feed-key">Impact / Urgency</span><span class="feed-val">${t.triage.impact} / ${t.triage.urgency}</span></div>
+            <div class="feed-row"><span class="feed-key">Assigned Team</span><span class="feed-val" style="color:${isEscalated ? '#f87171' : 'var(--primary-light)'};">${t.triage.assigned_team}</span></div>
+            <div class="feed-row"><span class="feed-key">Confidence</span><span class="feed-val">${t.triage.confidence}</span></div>
+            ${t.triage.missing_info ? `<div style="background:rgba(245,158,11,0.1);border-left:3px solid var(--warning);padding:8px 12px;border-radius:4px;font-size:13px;margin-top:8px;">⚠️ <strong>Follow-up needed:</strong> ${t.triage.follow_up}</div>` : ''}
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Resolution -->
+          <div class="feed-section">
+            <div class="feed-section-title">🛠️ Resolution Steps <span style="font-weight:400;color:var(--text-muted);">(first 3 of ${t.resolution.steps.length})</span></div>
+            ${steps.map(s => `
+              <div class="feed-step">
+                <span class="feed-step-num">${s.step}.</span>${s.action}
+                ${s.details ? `<div style="color:var(--text-muted);font-size:12px;margin-top:4px;padding-left:20px;">${s.details.substring(0, 120)}${s.details.length > 120 ? '...' : ''}</div>` : ''}
+              </div>
+            `).join('')}
+            ${t.resolution.prevention_tip ? `<div style="background:rgba(34,197,94,0.08);border-left:3px solid var(--success);padding:8px 12px;border-radius:4px;font-size:12px;color:#4ade80;margin-top:8px;">💡 ${t.resolution.prevention_tip}</div>` : ''}
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Reply Sent -->
+          <div class="feed-section">
+            <div class="feed-section-title">
+              ${isEscalated ? '🚨 Escalation Notice' : '✉️ Auto-Reply'}
+              &nbsp;${t.reply.sent ? '<span class="sent-badge">✉️ Sent</span>' : '<span class="unsent-badge">⚠️ Not Sent</span>'}
+            </div>
+            <div class="feed-reply">
+              <div class="${isEscalated ? 'escalated-reply-header' : 'feed-reply-header'}">
+                To: ${t.email.sender_email || t.email.sender} &nbsp;·&nbsp; Ticket: ${t.ticket_id}
+              </div>
+              <div class="feed-reply-body">${replyBodyText}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    // Also update escalated count in nav
+    refreshStats();
+  } catch(e) {
+    console.error('Feed error:', e);
+  }
+}
+
+function toggleFeed(id) {
+  feedExpanded[id] = !feedExpanded[id];
+  const body = document.getElementById('feed-body-' + id);
+  if (body) body.classList.toggle('open', feedExpanded[id]);
+}
+
+function jumpToCard(id) {
+  // Show detail view if hidden
+  if (!feedDetailVisible) {
+    feedDetailVisible = true;
+    document.getElementById('emailFeed').style.display = 'block';
+    document.getElementById('feedViewBtn').textContent = '☰ Collapse';
+  }
+  // Expand the card
+  feedExpanded[id] = true;
+  const body = document.getElementById('feed-body-' + id);
+  if (body) body.classList.add('open');
+  // Scroll to it
+  const card = body?.closest('.feed-card');
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+refreshStats();
+refreshGmailStatus();
+refreshFeed();
+setInterval(refreshGmailStatus, 15000);
+setInterval(refreshFeed, 10000); // Auto-refresh feed every 10 seconds // Refresh Gmail status every 15s
+
+// ─── Gmail Panel ─────────────────────────────────────────────────────────────
+let gmailPanelOpen = true;
+
+function toggleGmailPanel() {
+  gmailPanelOpen = !gmailPanelOpen;
+  document.getElementById('gmailBody').classList.toggle('open', gmailPanelOpen);
+  document.getElementById('gmailToggleArrow').textContent = gmailPanelOpen ? '▲' : '▼';
+}
+
+// Open by default
+document.getElementById('gmailBody').classList.add('open');
+
+async function refreshGmailStatus() {
+  try {
+    const r = await fetch('/api/gmail/status');
+    const d = await r.json();
+    const conn = d.connection || {};
+    const watch = d.watcher || {};
+
+    const dot = document.getElementById('gmailDot');
+    const badge = document.getElementById('gmailWatcherBadge');
+
+    if (conn.connected) {
+      dot.className = 'gmail-dot connected';
+      document.getElementById('gm-status').innerHTML = '<span style="color:var(--success);">✅ Connected</span>';
+      document.getElementById('gm-email').textContent = conn.email || '—';
+      document.getElementById('gm-label').textContent = conn.helpdesk_label || '—';
+    } else {
+      dot.className = 'gmail-dot error';
+      document.getElementById('gm-status').innerHTML = '<span style="color:var(--danger);">❌ Not connected</span>';
+      document.getElementById('gm-email').textContent = '—';
+      document.getElementById('gm-label').textContent = '—';
+    }
+
+    if (watch.running) {
+      badge.style.display = 'inline-flex';
+      document.getElementById('gm-watcher').innerHTML = '<span style="color:var(--success);"><span class="pulse-dot"></span>Running</span>';
+    } else {
+      badge.style.display = 'none';
+      document.getElementById('gm-watcher').innerHTML = '<span style="color:var(--text-muted);">Stopped</span>';
+    }
+
+    document.getElementById('gm-processed').textContent = watch.processed_count ?? 0;
+    document.getElementById('gm-escalated').textContent = watch.escalated_count ?? 0;
+    if (watch.last_check) {
+      const d2 = new Date(watch.last_check);
+      document.getElementById('gm-last-check').textContent = d2.toLocaleTimeString();
+    } else {
+      document.getElementById('gm-last-check').textContent = '—';
+    }
+
+    // Render recent log
+    const log = watch.recent_log || [];
+    const logEl = document.getElementById('gmailLog');
+    if (log.length === 0) {
+      logEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px;">No emails processed yet</div>';
+    } else {
+      logEl.innerHTML = log.slice().reverse().map(e => `
+        <div class="gmail-log-entry" style="${e.escalated ? 'border-color:rgba(239,68,68,0.4);background:rgba(239,68,68,0.05);' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="log-id" style="${e.escalated ? 'color:#f87171;' : ''}">${e.ticket_id}</span>
+            <div style="display:flex;gap:4px;">
+              ${e.priority ? priorityBadge(e.priority) : ''}
+              ${e.escalated ? '<span class="escalated-badge" style="font-size:10px;padding:2px 6px;">🚨 Escalated</span>' : '<span class="auto-resolved-badge" style="font-size:10px;padding:2px 6px;">✅ Auto</span>'}
+            </div>
+          </div>
+          <div class="log-meta">${e.subject || '(no subject)'}</div>
+          <div class="log-meta" style="margin-top:2px;">
+            From: ${e.sender || '—'} &nbsp;·&nbsp;
+            Team: ${e.team || '—'} &nbsp;·&nbsp;
+            ${e.reply_sent ? '✉️ Reply sent' : '⚠️ Reply not sent'} &nbsp;·&nbsp;
+            ${e.duration_ms ? (e.duration_ms/1000).toFixed(1) + 's' : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (_) {}
+}
+
+async function gmailStart() {
+  try {
+    const r = await fetch('/api/gmail/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({interval_seconds: 60}) });
+    const d = await r.json();
+    refreshGmailStatus();
+    showToast(d.started ? '▶ Gmail watcher started' : 'Already running');
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function gmailStop() {
+  try {
+    await fetch('/api/gmail/stop', { method: 'POST' });
+    refreshGmailStatus();
+    showToast('■ Gmail watcher stopped');
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function gmailProcessNow() {
+  const btn = document.querySelector('.btn-gmail-now');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing...';
+  try {
+    const r = await fetch('/api/gmail/process-now', { method: 'POST' });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    refreshGmailStatus();
+    refreshStats();
+    renderHistory();
+    showToast(`⚡ Processed ${d.processed} email(s)`);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Process Now';
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
